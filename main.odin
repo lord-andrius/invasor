@@ -77,19 +77,19 @@ menu :: proc(opcoes_menu: map[OpcoesMenu]cstring, opcao_selecionada: ^OpcoesMenu
  }
 
 
- desenha_sprite :: proc(sprite: [][]rune, x:i32, y:i32,vazio: rune = sprites.CARACTERE_VAZIO, claro: rune = sprites.CARACTERE_CLARO, escuro: rune = sprites.CARACTERE_ESCURO) {
+ desenha_sprite :: proc(sprite: [][]rune, x:i32, y:i32,scala: i32 = 5,vazio: rune = sprites.CARACTERE_VAZIO, claro: rune = sprites.CARACTERE_CLARO, escuro: rune = sprites.CARACTERE_ESCURO) {
 	y := y
 	for linha in sprite {
 		x_tmp := x
 		for coluna in linha {
 			if coluna == claro {
-				rl.DrawRectangle(x_tmp,y,5,5,VERDE_CLARO)
+				rl.DrawRectangle(x_tmp,y,scala,scala,VERDE_CLARO)
 			} else if coluna == escuro {
-				rl.DrawRectangle(x_tmp,y,5,5, VERDE)
+				rl.DrawRectangle(x_tmp,y,scala,scala, VERDE)
 			}
-			x_tmp += 5
+			x_tmp += scala
 		}
-		y += 5
+		y += scala
 	}
 
  }
@@ -102,13 +102,17 @@ main :: proc() {
 	opcoes_menu := make(map[OpcoesMenu]cstring)
 	opcoes_menu[.Jogar] = "Jogar"
 	opcoes_menu[.Sair] = "Sair"
-	opcao_selecionada := OpcoesMenu.Jogar
 	defer delete(opcoes_menu)
+	opcao_selecionada := OpcoesMenu.Jogar
+	x_nave: i32 = 0
+	y_nave: i32 = 0
 	continuar := true
 	
 	rl.InitWindow(LARGURA, ALTURA, "Invasores do espaco")	
 	defer rl.CloseWindow()
+	rl.SetTargetFPS(60)
 	for (!rl.WindowShouldClose() && continuar == true){
+		frame_time := rl.GetFrameTime()
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
 		desenhar_estrelas(estrelas)
@@ -116,7 +120,12 @@ main :: proc() {
 			case .Menu:
 				menu(opcoes_menu, &opcao_selecionada, &estado, &continuar)	
 			case .Jogando:
-				desenha_sprite(sprites.SPRITE_JOGADOR[:][:], 100, 100)
+				desenha_sprite(sprites.SPRITE_JOGADOR[:][:], x_nave, y_nave)
+				if rl.IsKeyDown(.LEFT) {
+					x_nave -= i32((1 + frame_time) * 5)
+				} else if rl.IsKeyDown(.RIGHT) {
+					x_nave += i32((1 + frame_time) * 5)
+				}
 			case .Pausado:
 		}
 		rl.EndDrawing()
