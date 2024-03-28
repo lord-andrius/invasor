@@ -106,6 +106,7 @@ main :: proc() {
 	opcao_selecionada := OpcoesMenu.Jogar
 	x_nave: i32 = 0
 	y_nave: i32 = 0
+	scala_nave: i32 = 5
 	continuar := true
 	
 	rl.InitWindow(LARGURA, ALTURA, "Invasores do espaco")	
@@ -120,11 +121,18 @@ main :: proc() {
 			case .Menu:
 				menu(opcoes_menu, &opcao_selecionada, &estado, &continuar)	
 			case .Jogando:
-				desenha_sprite(sprites.SPRITE_JOGADOR[:][:], x_nave, y_nave)
+				desenha_sprite(sprites.SPRITE_JOGADOR[:][:], x_nave, y_nave, scala_nave)
 				if rl.IsKeyDown(.LEFT) {
 					x_nave -= i32((1 + frame_time) * 5)
 				} else if rl.IsKeyDown(.RIGHT) {
 					x_nave += i32((1 + frame_time) * 5)
+				}
+
+				//limitando a movimentação da nave na lateral
+				if x_nave < 0 {
+					x_nave = 0
+				} else if x_nave > LARGURA - (i32(len(sprites.SPRITE_JOGADOR[0])) * scala_nave) {
+					x_nave = LARGURA - (i32(len(sprites.SPRITE_JOGADOR[0])) * scala_nave)
 				}
 			case .Pausado:
 		}
