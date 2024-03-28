@@ -4,6 +4,7 @@ import rl "vendor:raylib"
 import "core:math/rand"
 import "core:time"
 import "sprites"
+import "core:fmt"
 
 LARGURA :: 480
 ALTURA :: 640
@@ -121,19 +122,23 @@ main :: proc() {
 			case .Menu:
 				menu(opcoes_menu, &opcao_selecionada, &estado, &continuar)	
 			case .Jogando:
-				desenha_sprite(sprites.SPRITE_JOGADOR[:][:], x_nave, y_nave, scala_nave)
-				if rl.IsKeyDown(.LEFT) {
-					x_nave -= i32((1 + frame_time) * 5)
-				} else if rl.IsKeyDown(.RIGHT) {
-					x_nave += i32((1 + frame_time) * 5)
-				}
+				sprite_nave := sprites.SPRITES_JOGADOR.Parado
+				x_minimo_nave: i32 = 0
+				x_maximo_nave: i32 = LARGURA - i32(len(sprites.SPRITE_JOGADOR[sprite_nave][0])) * scala_nave
 
-				//limitando a movimentação da nave na lateral
-				if x_nave < 0 {
-					x_nave = 0
-				} else if x_nave > LARGURA - (i32(len(sprites.SPRITE_JOGADOR[0])) * scala_nave) {
-					x_nave = LARGURA - (i32(len(sprites.SPRITE_JOGADOR[0])) * scala_nave)
-				}
+				if rl.IsKeyDown(.LEFT) && x_nave >= x_minimo_nave + i32((1 + frame_time) * 5){ // limitando o movimento na lateral
+					if x_nave != 0 do sprite_nave = sprites.SPRITES_JOGADOR.Esquerda
+					x_nave -= i32((1 + frame_time) * 5)
+				} else if rl.IsKeyDown(.RIGHT)  && x_nave <= x_maximo_nave - i32((1 + frame_time) * 5){ // limitando o movimento na lateral
+					if x_nave != (LARGURA - (i32(len(sprites.SPRITE_JOGADOR[sprite_nave][0])) * scala_nave)) {
+						sprite_nave = sprites.SPRITES_JOGADOR.Direita
+					}
+					x_nave += i32((1 + frame_time) * 5)
+				} 
+				
+				desenha_sprite(sprites.SPRITE_JOGADOR[sprite_nave][:][:], x_nave, y_nave, scala_nave)
+
+				
 			case .Pausado:
 		}
 		rl.EndDrawing()
