@@ -11,7 +11,9 @@ ALTURA :: 640
 VERDE :: rl.Color{3,111,61,255}
 VERDE_CLARO :: rl.Color{3 * 2, 111 * 2, 61 * 2,255}
 FONTE_BASE :: 30
-
+TAMANHO_TIRO :: rl.Vector2{2, 10}
+COR_TIRO :: rl.Color{255,0,0,255}
+VEL_TIRO :: 6
 
 EstadoDeJogo :: enum {
 	Menu,
@@ -96,6 +98,47 @@ menu :: proc(opcoes_menu: map[OpcoesMenu]cstring, opcao_selecionada: ^OpcoesMenu
  }
 
 
+tiro :: proc(tiros: []rl.Vector3, frame_time: f32) {
+	tiros := tiros	
+	for &tiro in tiros {
+		if tiro[1] < TAMANHO_TIRO[1] + ALTURA && tiro[1] > -TAMANHO_TIRO[1] {
+			tiro[1] += f32((1 + frame_time) * tiro[2])
+		}
+		rl.DrawRectangleV({tiro[0],tiro[1]}, TAMANHO_TIRO, COR_TIRO)
+	}
+}
+
+nave :: proc(x_nave:^i32, y_nave:^i32, scala_nave: i32, tiros_nave:[]rl.Vector3, frame_time: f32) {
+	sprite_nave := sprites.SPRITES_JOGADOR.Parado
+	x_minimo_nave: i32 = 0
+	x_maximo_nave: i32 = LARGURA - i32(len(sprites.SPRITE_JOGADOR[sprite_nave][0])) * scala_nave
+
+	if rl.IsKeyDown(.LEFT) && x_nave^ >= x_minimo_nave + i32((1 + frame_time) * 5){ // limitando o movimento na lateral
+		x_nave^ -= i32((1 + frame_time) * 5)
+	} else if rl.IsKeyDown(.RIGHT)  && x_nave^ <= x_maximo_nave - i32((1 + frame_time) * 5){ // limitando o movimento na lateral
+		x_nave^ += i32((1 + frame_time) * 5)
+	}
+
+	if rl.IsKeyPressed(.SPACE) {
+		indice_tiro_disponivel: int = -1 // -1 quer dizer sem tiro disponivel
+		for tiro, indice in tiros_nave {
+			if tiro[1] >= ALTURA + TAMANHO_TIRO[1] || tiro[1] < 0{ // verifica se o tiro está fora da tela
+				indice_tiro_disponivel = indice
+			}
+		}
+		
+		if indice_tiro_disponivel > -1 {
+			tiros_nave[indice_tiro_disponivel][0] = f32(x_nave^ + (5  * scala_nave) - i32(TAMANHO_TIRO[0] / 2))
+			tiros_nave[indice_tiro_disponivel][1] = f32(y_nave^)
+			tiros_nave[indice_tiro_disponivel][2] = -VEL_TIRO
+		}
+
+	}
+	
+	desenha_sprite(sprites.SPRITE_JOGADOR[sprite_nave][:][:], x_nave^, y_nave^, scala_nave)
+
+}
+
 main :: proc() {
 	estado := EstadoDeJogo.Menu
 	rand.set_global_seed(u64(time.to_unix_nanoseconds(time.now())))
@@ -106,10 +149,14 @@ main :: proc() {
 	defer delete(opcoes_menu)
 	opcao_selecionada := OpcoesMenu.Jogar
 	x_nave: i32 = 0
-	y_nave: i32 = 0
 	scala_nave: i32 = 5
+	y_nave: i32 = ALTURA - (i32(len(sprites.SPRITE_JOGADOR[0])) * scala_nave)
 	continuar := true
-	
+
+	tiros := [?]rl.Vector3{{0,ALTURA + 10,0},{0,ALTURA + 10,0},{0,ALTURA + 10,0},{0,ALTURA + 10,0},{0,ALTURA + 10,0},{0,ALTURA + 10,0},{0,ALTURA + 10,0},{0,ALTURA + 10,0},{0,ALTURA + 10,0},{0,ALTURA + 10,0}}
+	qtd_tiros := len(tiros)
+	tiros_nave := tiros[:4]
+
 	rl.InitWindow(LARGURA, ALTURA, "Invasores do espaco")	
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
@@ -122,23 +169,10 @@ main :: proc() {
 			case .Menu:
 				menu(opcoes_menu, &opcao_selecionada, &estado, &continuar)	
 			case .Jogando:
-				sprite_nave := sprites.SPRITES_JOGADOR.Parado
-				x_minimo_nave: i32 = 0
-				x_maximo_nave: i32 = LARGURA - i32(len(sprites.SPRITE_JOGADOR[sprite_nave][0])) * scala_nave
-
-				if rl.IsKeyDown(.LEFT) && x_nave >= x_minimo_nave + i32((1 + frame_time) * 5){ // limitando o movimento na lateral
-					if x_nave != 0 do sprite_nave = sprites.SPRITES_JOGADOR.Esquerda
-					x_nave -= i32((1 + frame_time) * 5)
-				} else if rl.IsKeyDown(.RIGHT)  && x_nave <= x_maximo_nave - i32((1 + frame_time) * 5){ // limitando o movimento na lateral
-					if x_nave != (LARGURA - (i32(len(sprites.SPRITE_JOGADOR[sprite_nave][0])) * scala_nave)) {
-						sprite_nave = sprites.SPRITES_JOGADOR.Direita
-					}
-					x_nave += i32((1 + frame_time) * 5)
-				} 
+				tiro(tiros[:], frame_time) // tiro deve ser desenhado primeiro para dar a impressão do tiro siar de baixo da nave
+				nave(&x_nave, &y_nave, scala_nave, tiros_nave, frame_time)
 				
-				desenha_sprite(sprites.SPRITE_JOGADOR[sprite_nave][:][:], x_nave, y_nave, scala_nave)
-
-				
+								
 			case .Pausado:
 		}
 		rl.EndDrawing()
