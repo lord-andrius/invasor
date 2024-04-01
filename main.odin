@@ -171,7 +171,7 @@ main :: proc() {
 			case .Jogando:
 				tiro(tiros[:], frame_time) // tiro deve ser desenhado primeiro para dar a impressão do tiro siar de baixo da nave
 				nave(&x_nave, &y_nave, scala_nave, tiros_nave, frame_time)
-				
+				desenha_sprite(sprites.SPRITE_ESCUDO,50,50)
 								
 			case .Pausado:
 		}
