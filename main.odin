@@ -1,3 +1,4 @@
+// POR FAVOR VERIFICAR POR QUE A COLISÃO QUEBRA QUANDO APROXIMAMOS O ESCUDO DO JOGADOR
 package main
 
 import rl "vendor:raylib"
@@ -15,7 +16,7 @@ FONTE_BASE :: 30
 TAMANHO_TIRO :: rl.Vector2{2, 10}
 COR_TIRO :: rl.Color{255,0,0,255}
 VEL_TIRO :: 6
-POS_PRIMEIRO_ESCUDO :: [?]i32{50,ALTURA - (ALTURA / 5)}
+POS_PRIMEIRO_ESCUDO :: [?]i32{50,ALTURA - (ALTURA / 4)}
 SCALA_PADRAO :: 5
 
 EstadoDeJogo :: enum {
@@ -184,6 +185,7 @@ main :: proc() {
 				nave(&x_nave, &y_nave, scala_nave, tiros_nave, frame_time)
                 x_escudo, y_escudo := POS_PRIMEIRO_ESCUDO[0], POS_PRIMEIRO_ESCUDO[1]
                 for escudo in escudos {
+                    desenha_sprite(escudo,x_escudo, y_escudo)
                     y_parte_escudo := f32(y_escudo)
                     for linha_escudo, num_linha_escudo in escudo {
                         x_parte_escudo := f32(x_escudo)
@@ -194,14 +196,16 @@ main :: proc() {
                                SCALA_PADRAO,
                                SCALA_PADRAO
                             }
-                            for tiro in tiros {
+                            //rl.DrawRectangleLinesEx(parte_escudo_rec, 0.5, rl.WHITE)
+                            for &tiro in tiros {
                                 tiro_rec := rl.Rectangle {
                                     f32(tiro[0]),
                                     f32(tiro[1]),
                                     f32(TAMANHO_TIRO[0]),
                                     f32(TAMANHO_TIRO[1])
                                 }
-                                if rl.CheckCollisionRecs(parte_escudo_rec, tiro_rec) {
+                                if rl.CheckCollisionRecs(parte_escudo_rec, tiro_rec) && parte_escudo != sprites.CARACTERE_VAZIO {
+                                    tiro[1] = -TAMANHO_TIRO[1]
                                     parte_escudo = sprites.CARACTERE_VAZIO 
                                 }
                             }
@@ -209,7 +213,7 @@ main :: proc() {
                         }
                         y_parte_escudo += SCALA_PADRAO
                     }
-                    desenha_sprite(escudo,x_escudo, y_escudo)
+                    //desenha_sprite(escudo,x_escudo, y_escudo)
                     x_escudo += i32(len(escudo[0])) * SCALA_PADRAO + LARGURA / 4 
                 }
 			case .Pausado:
