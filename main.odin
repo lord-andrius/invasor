@@ -5,6 +5,7 @@ import "core:math/rand"
 import "core:time"
 import "sprites"
 import "core:fmt"
+import "core:runtime"
 
 LARGURA :: 480
 ALTURA :: 640
@@ -14,6 +15,8 @@ FONTE_BASE :: 30
 TAMANHO_TIRO :: rl.Vector2{2, 10}
 COR_TIRO :: rl.Color{255,0,0,255}
 VEL_TIRO :: 6
+POS_PRIMEIRO_ESCUDO :: [?]i32{50,ALTURA - (ALTURA / 5)}
+SCALA_PADRAO :: 5
 
 EstadoDeJogo :: enum {
 	Menu,
@@ -80,7 +83,7 @@ menu :: proc(opcoes_menu: map[OpcoesMenu]cstring, opcao_selecionada: ^OpcoesMenu
  }
 
 
- desenha_sprite :: proc(sprite: [][]rune, x:i32, y:i32,scala: i32 = 5,vazio: rune = sprites.CARACTERE_VAZIO, claro: rune = sprites.CARACTERE_CLARO, escuro: rune = sprites.CARACTERE_ESCURO) {
+ desenha_sprite :: proc(sprite: [][]rune, x:i32, y:i32,scala: i32 = SCALA_PADRAO,vazio: rune = sprites.CARACTERE_VAZIO, claro: rune = sprites.CARACTERE_CLARO, escuro: rune = sprites.CARACTERE_ESCURO) {
 	y := y
 	for linha in sprite {
 		x_tmp := x
@@ -98,8 +101,7 @@ menu :: proc(opcoes_menu: map[OpcoesMenu]cstring, opcao_selecionada: ^OpcoesMenu
  }
 
 
-tiro :: proc(tiros: []rl.Vector3, frame_time: f32) {
-	tiros := tiros	
+tiro :: proc(tiros: []rl.Vector3, frame_time: f32) { tiros := tiros	
 	for &tiro in tiros {
 		if tiro[1] < TAMANHO_TIRO[1] + ALTURA && tiro[1] > -TAMANHO_TIRO[1] {
 			tiro[1] += f32((1 + frame_time) * tiro[2])
@@ -152,6 +154,15 @@ main :: proc() {
 	scala_nave: i32 = 5
 	y_nave: i32 = ALTURA - (i32(len(sprites.SPRITE_JOGADOR[0])) * scala_nave)
 	continuar := true
+    escudos: [3][][]rune = ---
+    for &escudo in escudos {
+        erro: runtime.Allocator_Error
+        escudo, erro = sprites.copia_sprite(sprites.SPRITE_ESCUDO)
+        if erro != .None do panic("Erro ao alocar os sprites do escudo")
+    }
+    defer for escudo in escudos {
+        delete(escudo)
+    }
 
 	tiros := [?]rl.Vector3{{0,ALTURA + 10,0},{0,ALTURA + 10,0},{0,ALTURA + 10,0},{0,ALTURA + 10,0},{0,ALTURA + 10,0},{0,ALTURA + 10,0},{0,ALTURA + 10,0},{0,ALTURA + 10,0},{0,ALTURA + 10,0},{0,ALTURA + 10,0}}
 	qtd_tiros := len(tiros)
@@ -171,8 +182,36 @@ main :: proc() {
 			case .Jogando:
 				tiro(tiros[:], frame_time) // tiro deve ser desenhado primeiro para dar a impressão do tiro siar de baixo da nave
 				nave(&x_nave, &y_nave, scala_nave, tiros_nave, frame_time)
-				desenha_sprite(sprites.SPRITE_ESCUDO,50,50)
-								
+                x_escudo, y_escudo := POS_PRIMEIRO_ESCUDO[0], POS_PRIMEIRO_ESCUDO[1]
+                for escudo in escudos {
+                    y_parte_escudo := f32(y_escudo)
+                    for linha_escudo, num_linha_escudo in escudo {
+                        x_parte_escudo := f32(x_escudo)
+                        for &parte_escudo, num_coluna_escudo in linha_escudo {
+                            parte_escudo_rec := rl.Rectangle{
+                               x_parte_escudo,
+                               y_parte_escudo,
+                               SCALA_PADRAO,
+                               SCALA_PADRAO
+                            }
+                            for tiro in tiros {
+                                tiro_rec := rl.Rectangle {
+                                    f32(tiro[0]),
+                                    f32(tiro[1]),
+                                    f32(TAMANHO_TIRO[0]),
+                                    f32(TAMANHO_TIRO[1])
+                                }
+                                if rl.CheckCollisionRecs(parte_escudo_rec, tiro_rec) {
+                                    parte_escudo = sprites.CARACTERE_VAZIO 
+                                }
+                            }
+                            x_parte_escudo += SCALA_PADRAO
+                        }
+                        y_parte_escudo += SCALA_PADRAO
+                    }
+                    desenha_sprite(escudo,x_escudo, y_escudo)
+                    x_escudo += i32(len(escudo[0])) * SCALA_PADRAO + LARGURA / 4 
+                }
 			case .Pausado:
 		}
 		rl.EndDrawing()
