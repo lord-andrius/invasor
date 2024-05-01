@@ -13,10 +13,10 @@ ALTURA :: 640
 VERDE :: rl.Color{3,111,61,255}
 VERDE_CLARO :: rl.Color{3 * 2, 111 * 2, 61 * 2,255}
 FONTE_BASE :: 30
-TAMANHO_TIRO :: rl.Vector2{2, 10}
+TAMANHO_TIRO :: rl.Vector2{1, 10}
 COR_TIRO :: rl.Color{255,0,0,255}
-VEL_TIRO :: 6
-POS_PRIMEIRO_ESCUDO :: [?]i32{50,ALTURA - (ALTURA / 4)}
+VEL_TIRO :: 5
+POS_PRIMEIRO_ESCUDO :: [?]i32{50,ALTURA - (ALTURA / 5)}
 SCALA_PADRAO :: 5
 
 EstadoDeJogo :: enum {
@@ -131,7 +131,7 @@ nave :: proc(x_nave:^i32, y_nave:^i32, scala_nave: i32, tiros_nave:[]rl.Vector3,
 		}
 		
 		if indice_tiro_disponivel > -1 {
-			tiros_nave[indice_tiro_disponivel][0] = f32(x_nave^ + (5  * scala_nave) - i32(TAMANHO_TIRO[0] / 2))
+			tiros_nave[indice_tiro_disponivel][0] = f32(x_nave^ + (5  * scala_nave) - i32(TAMANHO_TIRO[0]))
 			tiros_nave[indice_tiro_disponivel][1] = f32(y_nave^)
 			tiros_nave[indice_tiro_disponivel][2] = -VEL_TIRO
 		}
@@ -181,41 +181,44 @@ main :: proc() {
 			case .Menu:
 				menu(opcoes_menu, &opcao_selecionada, &estado, &continuar)	
 			case .Jogando:
-				tiro(tiros[:], frame_time) // tiro deve ser desenhado primeiro para dar a impressão do tiro siar de baixo da nave
+				x_escudo, y_escudo := POS_PRIMEIRO_ESCUDO[0], POS_PRIMEIRO_ESCUDO[1]
+				for escudo in escudos {
+				    desenha_sprite(escudo,x_escudo, y_escudo)
+				    y_parte_escudo := f32(y_escudo)
+				    for linha_escudo, num_linha_escudo in escudo {
+					x_parte_escudo := f32(x_escudo)
+					for &parte_escudo, num_coluna_escudo in linha_escudo {
+					    parte_escudo_rec := rl.Rectangle{
+					       x_parte_escudo,
+					       y_parte_escudo,
+					       SCALA_PADRAO,
+					       SCALA_PADRAO
+					    }
+					    rl.DrawRectangleLinesEx(parte_escudo_rec, 0.5, rl.WHITE)
+					    for &tiro in tiros {
+						tiro_rec := rl.Rectangle {
+						    f32(tiro[0]),
+						    f32(tiro[1]),
+						    f32(TAMANHO_TIRO[0]),
+						    f32(TAMANHO_TIRO[1])
+						}
+						if rl.CheckCollisionRecs(parte_escudo_rec, tiro_rec) && parte_escudo != sprites.CARACTERE_VAZIO {
+						    tiro[1] = -TAMANHO_TIRO[1]
+						    parte_escudo = sprites.CARACTERE_VAZIO 
+						}
+						//rl.DrawRectangleRec(tiro_rec,rl.WHITE)
+					    }
+					    x_parte_escudo += SCALA_PADRAO
+					}
+					y_parte_escudo += SCALA_PADRAO
+				    }
+				    //desenha_sprite(escudo,x_escudo, y_escudo)
+				    x_escudo += i32(len(escudo[0])) * SCALA_PADRAO + LARGURA / 4 
+				}
+		                tiro(tiros[:], frame_time) // tiro deve ser desenhado primeiro para dar a impressão do tiro siar de baixo da nave
 				nave(&x_nave, &y_nave, scala_nave, tiros_nave, frame_time)
-                x_escudo, y_escudo := POS_PRIMEIRO_ESCUDO[0], POS_PRIMEIRO_ESCUDO[1]
-                for escudo in escudos {
-                    desenha_sprite(escudo,x_escudo, y_escudo)
-                    y_parte_escudo := f32(y_escudo)
-                    for linha_escudo, num_linha_escudo in escudo {
-                        x_parte_escudo := f32(x_escudo)
-                        for &parte_escudo, num_coluna_escudo in linha_escudo {
-                            parte_escudo_rec := rl.Rectangle{
-                               x_parte_escudo,
-                               y_parte_escudo,
-                               SCALA_PADRAO,
-                               SCALA_PADRAO
-                            }
-                            //rl.DrawRectangleLinesEx(parte_escudo_rec, 0.5, rl.WHITE)
-                            for &tiro in tiros {
-                                tiro_rec := rl.Rectangle {
-                                    f32(tiro[0]),
-                                    f32(tiro[1]),
-                                    f32(TAMANHO_TIRO[0]),
-                                    f32(TAMANHO_TIRO[1])
-                                }
-                                if rl.CheckCollisionRecs(parte_escudo_rec, tiro_rec) && parte_escudo != sprites.CARACTERE_VAZIO {
-                                    tiro[1] = -TAMANHO_TIRO[1]
-                                    parte_escudo = sprites.CARACTERE_VAZIO 
-                                }
-                            }
-                            x_parte_escudo += SCALA_PADRAO
-                        }
-                        y_parte_escudo += SCALA_PADRAO
-                    }
-                    //desenha_sprite(escudo,x_escudo, y_escudo)
-                    x_escudo += i32(len(escudo[0])) * SCALA_PADRAO + LARGURA / 4 
-                }
+
+			
 			case .Pausado:
 		}
 		rl.EndDrawing()
