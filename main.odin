@@ -138,7 +138,6 @@ tiro :: proc(tiros: []rl.Vector3, frame_time: f32, escudos: [3][][]rune) {
 		}
 		y_parte_escudo += SCALA_PADRAO
 	    }
-	    //desenha_sprite(escudo,x_escudo, y_escudo)
 	    x_escudo += i32(len(escudo[0])) * SCALA_PADRAO + LARGURA / 4 
 	}
 }
@@ -191,6 +190,20 @@ escudo :: proc(escudos: [3][][]rune) {
 	    x_escudo += i32(len(escudo[0])) * SCALA_PADRAO + LARGURA / 4 
 	}
 } 
+
+
+Inimigos :: struct {
+	posicao: []rl.Vector2
+	sprite: []sprites.SPRITES_INVASOR
+}
+
+
+inimigos :: proc (inimigos: []Inimigos) {
+	using inimigos
+	for indice in 0..<len(inimigos)
+
+}
+
 
 main :: proc() {
 	estado := EstadoDeJogo.Menu
