@@ -193,14 +193,45 @@ escudo :: proc(escudos: [3][][]rune) {
 
 
 Inimigos :: struct {
-	posicao: []rl.Vector2
-	sprite: []sprites.SPRITES_INVASOR
+	posicoes: []rl.Vector2,
+	sprite: sprites.SPRITES_INVASOR,
+	tempo_animacao: f64, // Vou guardar quando o inimigo mudou de sprite
+}
+
+criar_inimigos :: proc() -> Inimigos {
+	posicoes := make([]rl.Vector2, 1)
+	return Inimigos{
+		posicoes = posicoes,
+		sprite = .Parado,
+		tempo_animacao = time.duration_seconds(time.since(time.now())),
+	}
+}
+
+destruir_inimigos :: proc(inimigo: ^Inimigos) {
+	delete(inimigo.posicoes)	
 }
 
 
-inimigos :: proc (inimigos: []Inimigos) {
+atualiza_e_desenha_inimigos :: proc (inimigos: ^Inimigos) {
 	using inimigos
-	for indice in 0..<len(inimigos)
+	tempo_atual := time.duration_seconds(time.since(time.now()))
+	if tempo_atual - tempo_animacao > 0.1 {
+		tempo_animacao = tempo_atual
+		if sprite == .Parado {
+			sprite = .Atirando
+		} else {
+			sprite = .Parado
+		}
+	} 
+
+	for posicao in posicoes {
+		deve_atirar := rand.int31_max(11) % 2 == 0
+		desenha_sprite(
+			sprites.SPRITE_INVASOR[int(sprite)],
+			i32(posicao[0]),
+		    i32(posicao[1])
+		)	
+	}
 
 }
 
@@ -227,6 +258,10 @@ main :: proc() {
 	qtd_tiros := len(tiros)
 	tiros_nave := tiros[:4]
 
+	inimigos := criar_inimigos()
+	defer destruir_inimigos(&inimigos)
+			
+
 	rl.InitWindow(LARGURA, ALTURA, "Invasores do espaco")	
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
@@ -240,6 +275,7 @@ main :: proc() {
 				menu(opcoes_menu, &opcao_selecionada, &estado, &continuar)	
 			case .Jogando:
 		                tiro(tiros[:], frame_time, escudos) // tiro deve ser desenhado primeiro para dar a impressão do tiro siar de baixo da nave
+						atualiza_e_desenha_inimigos(&inimigos)
 				nave(&x_nave, &y_nave, scala_nave, tiros_nave, frame_time)
 				escudo(escudos)
 			
