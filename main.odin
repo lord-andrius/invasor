@@ -195,7 +195,7 @@ escudo :: proc(escudos: [3][][]rune) {
 Inimigos :: struct {
 	posicoes: []rl.Vector2,
 	sprite: sprites.SPRITES_INVASOR,
-	tempo_animacao: f64, // Vou guardar quando o inimigo mudou de sprite
+	tempo_animacao: time.Time, // Vou guardar quando o inimigo mudou de sprite
 }
 
 criar_inimigos :: proc() -> Inimigos {
@@ -203,7 +203,7 @@ criar_inimigos :: proc() -> Inimigos {
 	return Inimigos{
 		posicoes = posicoes,
 		sprite = .Parado,
-		tempo_animacao = time.duration_seconds(time.since(time.now())),
+		tempo_animacao = time.now(),
 	}
 }
 
@@ -214,9 +214,8 @@ destruir_inimigos :: proc(inimigo: ^Inimigos) {
 
 atualiza_e_desenha_inimigos :: proc (inimigos: ^Inimigos) {
 	using inimigos
-	tempo_atual := time.duration_seconds(time.since(time.now()))
-	if tempo_atual - tempo_animacao > 0.1 {
-		tempo_animacao = tempo_atual
+	if time.duration_seconds(time.since(tempo_animacao)) > 0.5 {
+		tempo_animacao = time.now()
 		if sprite == .Parado {
 			sprite = .Atirando
 		} else {
